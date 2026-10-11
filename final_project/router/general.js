@@ -1,69 +1,72 @@
-
 const express = require('express');
 const axios = require('axios');
 const books = require('./booksdb.js');
 
 const public_users = express.Router();
 
-// Get all books using async/await and Axios
+// Get all books using Axios and async/await
 public_users.get('/', async (req, res) => {
   try {
     const response = await axios.get(
       'https://openlibrary.org/subjects/fiction.json?limit=10'
     );
-    return res.status(200).json(response.data);
+    res.status(200).json(response.data);
   } catch (error) {
-    return res.status(500).json({ message: 'Error retrieving books' });
+    res.status(500).json({ message: 'Error retrieving books' });
   }
 });
 
-// Get book by ISBN
-public_users.get('/isbn/:isbn', (req, res) => {
-  Promise.resolve(books[req.params.isbn])
-    .then((book) => {
-      if (!book) {
-        return res.status(404).json({ message: 'Book not found' });
-      }
-      return res.status(200).json(book);
-    })
-    .catch(() => {
-      return res.status(500).json({ message: 'Error retrieving book' });
+// Get a book by ISBN using Axios
+public_users.get('/isbn/:isbn', async (req, res) => {
+  try {
+    const response = await axios.get(
+      `https://openlibrary.org/isbn/${encodeURIComponent(req.params.isbn)}.json`
+    );
+    res.status(200).json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({
+      message: 'Error retrieving book by ISBN'
     });
+  }
 });
 
-// Get books by author using async/await
+// Get books by author using Axios
 public_users.get('/author/:author', async (req, res) => {
   try {
-    const author = req.params.author.toLowerCase();
-    const result = await Promise.resolve(
-      Object.values(books).filter(
-        (book) => book.author &&
-          book.author.toLowerCase() === author
-      )
+    const response = await axios.get(
+      'https://openlibrary.org/search.json',
+      {
+        params: {
+          author: req.params.author,
+          limit: 10
+        }
+      }
     );
-    return res.status(200).json(result);
+    res.status(200).json(response.data);
   } catch (error) {
-    return res.status(500).json({ message: 'Error retrieving books' });
+    res.status(500).json({ message: 'Error retrieving books by author' });
   }
 });
 
-// Get books by title using async/await
+// Get books by title using Axios
 public_users.get('/title/:title', async (req, res) => {
   try {
-    const title = req.params.title.toLowerCase();
-    const result = await Promise.resolve(
-      Object.values(books).filter(
-        (book) => book.title &&
-          book.title.toLowerCase().includes(title)
-      )
+    const response = await axios.get(
+      'https://openlibrary.org/search.json',
+      {
+        params: {
+          title: req.params.title,
+          limit: 10
+        }
+      }
     );
-    return res.status(200).json(result);
+    res.status(200).json(response.data);
   } catch (error) {
-    return res.status(500).json({ message: 'Error retrieving books' });
+    res.status(500).json({ message: 'Error retrieving books by title' });
   }
 });
 
-// Get reviews for a book
+// Get reviews from the local assignment database
 public_users.get('/review/:isbn', (req, res) => {
   const book = books[req.params.isbn];
 
@@ -71,7 +74,7 @@ public_users.get('/review/:isbn', (req, res) => {
     return res.status(404).json({ message: 'Book not found' });
   }
 
-  return res.status(200).json(book.reviews || {});
+  res.status(200).json(book.reviews || {});
 });
 
 module.exports.general = public_users;
