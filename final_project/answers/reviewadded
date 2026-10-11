@@ -1,0 +1,5 @@
+Command:
+curl.exe -b answers\cookies.txt -X PUT "http://localhost:5000/customer/auth/review/1" -H "Content-Type: application/json" --data-binary "@answers/review.json"
+
+Output:
+{"message":"Review added successfully","reviews":{"finaluser":"This is an excellent book"}}
